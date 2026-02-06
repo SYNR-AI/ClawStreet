@@ -4,13 +4,14 @@ export const TAB_GROUPS = [
   { label: "Chat", tabs: ["chat"] },
   {
     label: "Control",
-    tabs: ["overview", "channels", "instances", "sessions", "usage", "cron"],
+    tabs: ["overview", "channels", "instances", "sessions", "usage", "cron", "portfolio"],
   },
   { label: "Agent", tabs: ["agents", "skills", "nodes"] },
   { label: "Settings", tabs: ["config", "debug", "logs"] },
 ] as const;
 
 export type Tab =
+  | "portfolio"
   | "agents"
   | "overview"
   | "channels"
@@ -26,6 +27,7 @@ export type Tab =
   | "logs";
 
 const TAB_PATHS: Record<Tab, string> = {
+  portfolio: "/portfolio",
   agents: "/agents",
   overview: "/overview",
   channels: "/channels",
@@ -150,6 +152,8 @@ export function iconForTab(tab: Tab): IconName {
       return "bug";
     case "logs":
       return "scrollText";
+    case "portfolio":
+      return "dollarSign";
     default:
       return "folder";
   }
@@ -183,6 +187,8 @@ export function titleForTab(tab: Tab) {
       return "Debug";
     case "logs":
       return "Logs";
+    case "portfolio":
+      return "Portfolio";
     default:
       return "Control";
   }
@@ -216,6 +222,8 @@ export function subtitleForTab(tab: Tab) {
       return "Gateway snapshots, events, and manual RPC calls.";
     case "logs":
       return "Live tail of the gateway file logs.";
+    case "portfolio":
+      return "Trading sandbox with live Binance prices.";
     default:
       return "";
   }
