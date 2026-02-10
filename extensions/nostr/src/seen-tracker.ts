@@ -4,7 +4,7 @@
  */
 
 export interface SeenTrackerOptions {
-  /** Maximum number of entries to track (default: 100,000) */
+  /** Maximum number of entries to track (default: 1000,000) */
   maxEntries?: number;
   /** TTL in milliseconds (default: 1 hour) */
   ttlMs?: number;

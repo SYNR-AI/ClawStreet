@@ -10,10 +10,13 @@ import { connectHandlers } from "./server-methods/connect.js";
 import { cronHandlers } from "./server-methods/cron.js";
 import { deviceHandlers } from "./server-methods/devices.js";
 import { execApprovalsHandlers } from "./server-methods/exec-approvals.js";
+import { futuresHandlers } from "./server-methods/futures.js";
 import { healthHandlers } from "./server-methods/health.js";
 import { logsHandlers } from "./server-methods/logs.js";
 import { modelsHandlers } from "./server-methods/models.js";
 import { nodeHandlers } from "./server-methods/nodes.js";
+import { optionsHandlers } from "./server-methods/options.js";
+import { portfolioHandlers } from "./server-methods/portfolio.js";
 import { sendHandlers } from "./server-methods/send.js";
 import { sessionsHandlers } from "./server-methods/sessions.js";
 import { skillsHandlers } from "./server-methods/skills.js";
@@ -23,6 +26,7 @@ import { ttsHandlers } from "./server-methods/tts.js";
 import { updateHandlers } from "./server-methods/update.js";
 import { usageHandlers } from "./server-methods/usage.js";
 import { voicewakeHandlers } from "./server-methods/voicewake.js";
+import { watchlistHandlers } from "./server-methods/watchlist.js";
 import { webHandlers } from "./server-methods/web.js";
 import { wizardHandlers } from "./server-methods/wizard.js";
 
@@ -72,6 +76,9 @@ const READ_METHODS = new Set([
   "node.list",
   "node.describe",
   "chat.history",
+  "portfolio.get",
+  "portfolio.transactions",
+  "portfolio.quote",
 ]);
 const WRITE_METHODS = new Set([
   "send",
@@ -88,6 +95,7 @@ const WRITE_METHODS = new Set([
   "chat.send",
   "chat.abort",
   "browser.request",
+  "portfolio.trade",
 ]);
 
 function authorizeGatewayMethod(method: string, client: GatewayRequestOptions["client"]) {
@@ -183,6 +191,10 @@ export const coreGatewayHandlers: GatewayRequestHandlers = {
   ...systemHandlers,
   ...updateHandlers,
   ...nodeHandlers,
+  ...portfolioHandlers,
+  ...futuresHandlers,
+  ...optionsHandlers,
+  ...watchlistHandlers,
   ...sendHandlers,
   ...usageHandlers,
   ...agentHandlers,

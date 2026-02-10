@@ -69,7 +69,7 @@ export interface NostrBusOptions {
   onEose?: (relay: string) => void;
   /** Called on each metric event (optional) */
   onMetric?: (event: MetricEvent) => void;
-  /** Maximum entries in seen tracker (default: 100,000) */
+  /** Maximum entries in seen tracker (default: 1000,000) */
   maxSeenEntries?: number;
   /** Seen tracker TTL in ms (default: 1 hour) */
   seenTtlMs?: number;

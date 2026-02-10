@@ -41,6 +41,8 @@ import {
 import { scheduleGatewayUpdateCheck } from "../infra/update-startup.js";
 import { startDiagnosticHeartbeat, stopDiagnosticHeartbeat } from "../logging/diagnostic.js";
 import { createSubsystemLogger, runtimeForLogger } from "../logging/subsystem.js";
+import { getPortfolioService } from "../portfolio/index.js";
+import { getWatchlistService } from "../watchlist/index.js";
 import { runOnboardingWizard } from "../wizard/onboarding.js";
 import { startGatewayConfigReloader } from "./config-reload.js";
 import { ExecApprovalManager } from "./exec-approval-manager.js";
@@ -224,6 +226,13 @@ export async function startGatewayServer(
   }
   setGatewaySigusr1RestartPolicy({ allowExternal: cfgAtStart.commands?.restart === true });
   initSubagentRegistry();
+
+  // Eagerly initialise portfolio & watchlist data files under ~/.openclaw/
+  // so they exist before any RPC or agent tool accesses them.
+  void Promise.all([getPortfolioService(), getWatchlistService()])
+    .then(() => log.info("gateway: portfolio & watchlist data files ready"))
+    .catch((err) => log.warn(`gateway: failed to initialise data files: ${String(err)}`));
+
   const defaultAgentId = resolveDefaultAgentId(cfgAtStart);
   const defaultWorkspaceDir = resolveAgentWorkspaceDir(cfgAtStart, defaultAgentId);
   const baseMethods = listGatewayMethods();
@@ -461,6 +470,36 @@ export async function startGatewayServer(
 
   void cron.start().catch((err) => logCron.error(`failed to start: ${String(err)}`));
 
+  // Futures liquidation check every 10 seconds
+  const futuresLiquidationInterval = setInterval(() => {
+    void (async () => {
+      try {
+        const { getPortfolioService } = await import("../portfolio/index.js");
+        const { getFuturesService, checkFuturesLiquidation } = await import("../futures/index.js");
+        const { portfolio, marketData } = await getPortfolioService();
+        const { futuresEngine } = await getFuturesService(portfolio, marketData);
+        await checkFuturesLiquidation(futuresEngine, marketData, broadcast);
+      } catch {
+        // Silently skip — no positions or service not ready
+      }
+    })();
+  }, 10_000);
+
+  // Options expiry settlement check every hour
+  const optionsExpiryInterval = setInterval(() => {
+    void (async () => {
+      try {
+        const { getPortfolioService } = await import("../portfolio/index.js");
+        const { getOptionsService } = await import("../options/index.js");
+        const { portfolio, stockMarketData } = await getPortfolioService();
+        const { optionsEngine } = await getOptionsService(portfolio, stockMarketData);
+        await optionsEngine.settleExpiredOptions(broadcast);
+      } catch {
+        // Silently skip — no positions or service not ready
+      }
+    })();
+  }, 3_600_000);
+
   const execApprovalManager = new ExecApprovalManager();
   const execApprovalForwarder = createExecApprovalForwarder();
   const execApprovalHandlers = createExecApprovalHandlers(execApprovalManager, {
@@ -632,6 +671,8 @@ export async function startGatewayServer(
         skillsRefreshTimer = null;
       }
       skillsChangeUnsub();
+      clearInterval(futuresLiquidationInterval);
+      clearInterval(optionsExpiryInterval);
       await close(opts);
     },
   };

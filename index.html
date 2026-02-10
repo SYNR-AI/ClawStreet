@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ClawCapital — Your Personal AI Portfolio Manager</title>
+    <meta
+      name="description"
+      content="ClawCapital turns your OpenClaw bot into an AI portfolio manager. Paper-trade US stocks and crypto with live prices, long/short support, and AI-driven watchlist intelligence."
+    />
+    <meta
+      name="keywords"
+      content="AI trading, portfolio manager, paper trading, crypto, US stocks, OpenClaw, Binance, Yahoo Finance, short selling, watchlist"
+    />
+    <meta property="og:title" content="ClawCapital — Your Personal AI Portfolio Manager" />
+    <meta
+      property="og:description"
+      content="Your AI bot manages a $1M simulated portfolio with live market prices. Long, short, and explain every trade."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="assets/image.png" />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      :root {
+        --bg: #0a0a0f;
+        --card: #12121a;
+        --border: #1e1e2e;
+        --text: #a0a0b8;
+        --text-strong: #e0e0f0;
+        --accent: #6c5ce7;
+        --accent-dim: #6c5ce720;
+        --green: #00b894;
+        --red: #e17055;
+        --mono: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.7;
+        overflow-x: hidden;
+      }
+
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+
+      a:hover {
+        text-decoration: underline;
+      }
+
+      .container {
+        max-width: 860px;
+        margin: 0 auto;
+        padding: 0 1.5rem;
+      }
+
+      /* Hero */
+      .hero {
+        padding: 6rem 0 3rem;
+        text-align: center;
+      }
+
+      .hero h1 {
+        font-size: 2.8rem;
+        font-weight: 800;
+        color: var(--text-strong);
+        letter-spacing: -0.03em;
+        margin-bottom: 1.2rem;
+      }
+
+      .hero h1 span {
+        color: var(--accent);
+      }
+
+      .hero .tagline {
+        font-size: 1.2rem;
+        max-width: 600px;
+        margin: 0 auto 1.5rem;
+      }
+
+      .hero .sub {
+        font-size: 0.95rem;
+        color: var(--text);
+        opacity: 0.7;
+        margin-bottom: 2rem;
+      }
+
+      .fork-badge {
+        display: inline-block;
+        font-size: 0.8rem;
+        padding: 0.4rem 1rem;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        color: var(--text);
+        margin-bottom: 3rem;
+      }
+
+      .fork-badge code {
+        color: var(--accent);
+        font-family: var(--mono);
+      }
+
+      /* Screenshot */
+      .screenshot {
+        padding: 0 0 4rem;
+        text-align: center;
+      }
+
+      .screenshot img {
+        max-width: 100%;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      }
+
+      /* Sections */
+      section {
+        padding: 3rem 0;
+      }
+
+      section h2 {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: var(--text-strong);
+        margin-bottom: 2rem;
+      }
+
+      /* Feature Grid */
+      .features {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+      }
+
+      @media (max-width: 640px) {
+        .features {
+          grid-template-columns: 1fr;
+        }
+
+        .hero h1 {
+          font-size: 2rem;
+        }
+      }
+
+      .feature-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 1.8rem;
+      }
+
+      .feature-card h3 {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--text-strong);
+        margin-bottom: 0.6rem;
+      }
+
+      .feature-card ul {
+        list-style: none;
+        padding: 0;
+      }
+
+      .feature-card li {
+        padding: 0.2rem 0;
+        font-size: 0.9rem;
+      }
+
+      .feature-card li::before {
+        content: ">";
+        color: var(--accent);
+        font-family: var(--mono);
+        margin-right: 0.5rem;
+        font-weight: 700;
+      }
+
+      /* Tools table */
+      .tools-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.88rem;
+      }
+
+      .tools-table th {
+        text-align: left;
+        padding: 0.7rem 1rem;
+        border-bottom: 2px solid var(--border);
+        color: var(--text-strong);
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+      }
+
+      .tools-table td {
+        padding: 0.6rem 1rem;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .tools-table code {
+        font-family: var(--mono);
+        font-size: 0.82rem;
+        color: var(--accent);
+      }
+
+      /* Code block */
+      .code-section pre {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 1.5rem;
+        overflow-x: auto;
+        font-family: var(--mono);
+        font-size: 0.85rem;
+        color: var(--text-strong);
+        line-height: 1.8;
+      }
+
+      .code-section .comment {
+        color: #666;
+      }
+
+      /* Architecture */
+      .arch pre {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 1.5rem;
+        font-family: var(--mono);
+        font-size: 0.82rem;
+        color: var(--text);
+        overflow-x: auto;
+        line-height: 1.7;
+      }
+
+      /* Footer */
+      footer {
+        padding: 3rem 0;
+        text-align: center;
+        border-top: 1px solid var(--border);
+        margin-top: 2rem;
+        font-size: 0.85rem;
+      }
+
+      footer .links {
+        margin-bottom: 0.8rem;
+      }
+
+      footer .links a {
+        margin: 0 0.8rem;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <header class="hero">
+        <h1><span>ClawCapital</span></h1>
+        <p class="tagline">
+          Your AI bot, promoted to portfolio manager. It watches the market 24/7, explains every
+          trade, and never takes a vacation.
+        </p>
+        <p class="sub">
+          We were itching to let our bot trade real money, but decided to let it paper-trade first
+          and prove itself. So here we are&mdash;a $1M simulated portfolio, live market data, and an
+          AI that has to justify every move.
+        </p>
+        <div class="fork-badge">
+          Fork of <a href="https://github.com/openclaw/openclaw">OpenClaw</a> &middot;
+          <code>main</code> syncs upstream &middot; features on <code>clawcapital</code>
+        </div>
+      </header>
+
+      <div class="screenshot">
+        <img
+          src="assets/image.png"
+          alt="ClawCapital Watchlist UI — US Stocks and Crypto monitoring with AI intelligence feed"
+        />
+      </div>
+
+      <section>
+        <h2>What your "PM" can do</h2>
+        <div class="features">
+          <div class="feature-card">
+            <h3>Trade &mdash; long, short, everything</h3>
+            <ul>
+              <li>Long &amp; Short with isolated margin (1x)</li>
+              <li>US stocks + crypto in one portfolio</li>
+              <li>Position Stories &mdash; thesis, memo, trade history</li>
+              <li>Day P&amp;L tracking with daily snapshots</li>
+            </ul>
+          </div>
+          <div class="feature-card">
+            <h3>Watch &mdash; like a hawk, but smarter</h3>
+            <ul>
+              <li>The Eye &mdash; per-ticker AI monitoring focus</li>
+              <li>Heat Rating &mdash; cold / warm / hot</li>
+              <li>Intel Feed &mdash; AI-pushed news with impact</li>
+              <li>Opportunity Radar &mdash; cross-sector scanning</li>
+            </ul>
+          </div>
+          <div class="feature-card">
+            <h3>Dashboard</h3>
+            <ul>
+              <li>Portfolio &mdash; P&amp;L, margin, expandable stories</li>
+              <li>Watchlist &mdash; intel board (Stocks / Crypto)</li>
+            </ul>
+          </div>
+          <div class="feature-card">
+            <h3>Live Market Data</h3>
+            <ul>
+              <li>Binance REST API for crypto</li>
+              <li>Yahoo Finance for US stocks</li>
+              <li>30s cache, auto-refresh</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Tools the bot uses on its own</h2>
+        <table class="tools-table">
+          <thead>
+            <tr>
+              <th>Tool</th>
+              <th>What it does</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <code>portfolio_buy</code> / <code>sell</code> / <code>short</code> /
+                <code>cover</code>
+              </td>
+              <td>Execute trades</td>
+            </tr>
+            <tr>
+              <td><code>portfolio_get</code></td>
+              <td>Check holdings, cash, P&amp;L, margin</td>
+            </tr>
+            <tr>
+              <td><code>portfolio_set_meta</code></td>
+              <td>Record thesis &amp; notes on positions</td>
+            </tr>
+            <tr>
+              <td><code>market_data_quote</code></td>
+              <td>Get live prices (crypto &amp; stocks)</td>
+            </tr>
+            <tr>
+              <td><code>watchlist_add</code> / <code>remove</code> / <code>update</code></td>
+              <td>Manage watchlist</td>
+            </tr>
+            <tr>
+              <td><code>watchlist_add_intel</code></td>
+              <td>Push intelligence to the feed</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="code-section">
+        <h2>Quick start</h2>
+        <pre><span class="comment"># clone &amp; switch to the clawcapital branch</span>
+git clone &lt;this-repo&gt;
+cd ClawCapital &amp;&amp; git checkout clawcapital
+
+<span class="comment"># build</span>
+pnpm install &amp;&amp; pnpm ui:build &amp;&amp; pnpm build
+
+<span class="comment"># run</span>
+pnpm openclaw onboard --install-daemon
+pnpm openclaw gateway --port 18789</pre>
+      </section>
+
+      <section class="arch">
+        <h2>Architecture</h2>
+        <pre>Gateway (ws://127.0.0.1:18789)
+  ├── src/portfolio/          <span style="color:#666"># Trading engine, market data, margin</span>
+  ├── src/watchlist/          <span style="color:#666"># Watchlist domain + enrichment</span>
+  ├── src/agents/tools/       <span style="color:#666"># portfolio-tools, watchlist-tools</span>
+  ├── src/gateway/server-methods/
+  │     ├── portfolio.ts      <span style="color:#666"># RPC: get, trade, quote, reset</span>
+  │     └── watchlist.ts      <span style="color:#666"># RPC: get, add, remove, update</span>
+  └── ui/src/ui/views/        <span style="color:#666"># Portfolio &amp; Watchlist pages</span></pre>
+      </section>
+
+      <footer>
+        <div class="links">
+          <a href="https://github.com/openclaw/openclaw">OpenClaw</a>
+          <a href="https://github.com/synr-ai/clawcapital">GitHub</a>
+        </div>
+        <p>
+          MIT License &copy; 2025 Peter Steinberger &middot; &copy; 2026 SYNR-AI (ClawCapital
+          additions)
+        </p>
+      </footer>
+    </div>
+  </body>
+</html>

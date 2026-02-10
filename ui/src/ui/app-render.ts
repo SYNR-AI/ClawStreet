@@ -1,4 +1,6 @@
 import { html, nothing } from "lit";
+import "./views/portfolio.ts";
+import "./views/watchlist.ts";
 import type { AppViewState } from "./app-view-state.ts";
 import type { UsageState } from "./controllers/usage.ts";
 import { parseAgentSessionKey } from "../../../src/routing/session-key.js";
@@ -1214,6 +1216,29 @@ export function renderApp(state: AppViewState) {
               })
             : nothing
         }
+
+        ${
+          state.tab === "watchlist"
+            ? html`
+                <openclaw-watchlist-page
+                  .client=${state.client}
+                  .connected=${state.connected}
+                ></openclaw-watchlist-page>
+              `
+            : nothing
+        }
+
+        ${
+          state.tab === "portfolio"
+            ? html`
+                <openclaw-portfolio-page
+                  .client=${state.client}
+                  .connected=${state.connected}
+                ></openclaw-portfolio-page>
+              `
+            : nothing
+        }
+
       </main>
       ${renderExecApprovalPrompt(state)}
       ${renderGatewayUrlConfirmation(state)}

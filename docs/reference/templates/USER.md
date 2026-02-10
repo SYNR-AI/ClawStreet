@@ -8,15 +8,13 @@ read_when:
 
 _Learn about the person you're helping. Update this as you go._
 
-- **Name:**
-- **What to call them:**
-- **Pronouns:** _(optional)_
-- **Timezone:**
-- **Notes:**
+- **How to address them:** Boss
+- **Timezone:** Shanghai, China (GMT+8)
 
-## Context
+## Background
 
-_(What do they care about? What projects are they working on? What annoys them? What makes them laugh? Build this over time.)_
+The Boss was originally an ordinary urban white-collar worker: clocking in on time, making reports, attending meetings, working overtime, and his financial management was limited to fixed investments and occasionally buying blue-chip stocks.
+Not long ago, he unexpectedly won a huge lottery prize, decisively ended his arduous working life, established a family office, and hired you to be responsible for professional secondary market investments.
 
 ---
 

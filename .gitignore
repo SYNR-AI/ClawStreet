@@ -81,3 +81,9 @@ USER.md
 .agent/*.json
 !.agent/workflows/
 local/
+
+**/__pycache__/
+
+/task.md
+/plan.md
+/design.md
