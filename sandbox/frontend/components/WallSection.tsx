@@ -1,28 +1,41 @@
 import React from "react";
+import type { ChatState } from "../hooks/useChat";
 import Clock from "./Clock";
 
 interface WallSectionProps {
-  message?: { time: string; date: string; text: string };
+  displayText: string;
+  chatState: ChatState;
   isChinese?: boolean;
+  overrideTime?: string;
+  overrideDate?: string;
 }
 
-const WallSection: React.FC<WallSectionProps> = ({ message, isChinese }) => {
-  const showBeam = !!message;
+const WallSection: React.FC<WallSectionProps> = ({
+  displayText,
+  chatState,
+  isChinese,
+  overrideTime,
+  overrideDate,
+}) => {
+  const showBeam = !!displayText;
+  const isLoading = chatState === "sending";
 
   return (
     <div className="relative h-[65%] w-full z-10 flex items-center justify-center pt-8">
       {/* Frame / TV */}
       <div className="relative w-[75%] aspect-[16/9] flex items-center justify-center overflow-hidden"></div>
 
-      {/* Lobster projected message text */}
-      {message && (
+      {/* Lobster projected text */}
+      {(displayText || isLoading) && (
         <div
-          className="absolute z-10 flex justify-center pointer-events-none px-[15%]"
+          className="absolute z-10 overflow-y-auto overscroll-contain px-[15%]"
           style={{
             top: "27%",
             left: "50%",
             transform: "translateX(-50%)",
             width: "85%",
+            maxHeight: "36%",
+            WebkitOverflowScrolling: "touch",
           }}
         >
           <span
@@ -38,16 +51,16 @@ const WallSection: React.FC<WallSectionProps> = ({ message, isChinese }) => {
               whiteSpace: "pre-line",
             }}
           >
-            {message.text}
+            {isLoading ? "..." : displayText}
           </span>
         </div>
       )}
 
-      {/* Light beam cone: narrow at lobster head, wide at frame */}
+      {/* Light beam cone */}
       <div
         className="absolute z-20 pointer-events-none"
         style={{
-          opacity: showBeam ? 1 : 0,
+          opacity: showBeam || isLoading ? 1 : 0,
           transition: "opacity 0.5s ease-in-out",
           right: "10%",
           bottom: "-2%",
@@ -60,11 +73,11 @@ const WallSection: React.FC<WallSectionProps> = ({ message, isChinese }) => {
         }}
       ></div>
 
-      {/* Glow at lobster origin (its head) */}
+      {/* Glow at lobster origin */}
       <div
         className="absolute z-20 pointer-events-none"
         style={{
-          opacity: showBeam ? 0.8 : 0,
+          opacity: showBeam || isLoading ? 0.8 : 0,
           transition: "opacity 0.5s ease-in-out",
           right: "15%",
           bottom: "-6%",
@@ -78,7 +91,7 @@ const WallSection: React.FC<WallSectionProps> = ({ message, isChinese }) => {
 
       {/* Clock */}
       <div className="absolute left-[7%] bottom-[-6%] w-[35%] h-[15%] flex items-center justify-center transform rotate-1 opacity-90">
-        <Clock overrideTime={message?.time} overrideDate={message?.date} />
+        <Clock overrideTime={overrideTime} overrideDate={overrideDate} />
       </div>
       {/* Lobster */}
       <div className="absolute right-[5%] bottom-[-15%] w-[30%] aspect-square z-30">

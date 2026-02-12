@@ -3,30 +3,40 @@
     "time": "08:00",
     "date": "2025-10-06",
     "text_en": "Welcome back to 2025-10-06, this is the ClawCapital office in Manhattan, 42nd Street.",
-    "text_zh": "欢迎回到 2025年10月6日，这里是曼哈顿中城，第42街的ClawCapital办公室。"
+    "text_zh": "欢迎回到 2025年10月6日，这里是曼哈顿中城，第42街的ClawCapital办公室。欢迎回到 2025年10月6日，这里是曼哈顿中城，第42街的ClawCapital办公室。欢迎回到 2025年10月6日，这里是曼哈顿中城，第42街的ClawCapital办公室。",
+    "message_en": "Good morning. What's our portfolio looking like today?",
+    "message_zh": "早上好，今天我们的投资组合怎么样？"
   },
   {
     "time": "08:00",
     "date": "2025-10-06",
     "text_en": "The claw responds to these buttons. Left grabs, right releases. Fascinating.",
-    "text_zh": "你是ClawCapital基金的基金经理，你雇佣了一只龙虾作为高级分析师。"
+    "text_zh": "你是ClawCapital基金的基金经理，你雇佣了一只龙虾作为高级分析师。",
+    "message_en": "Any interesting opportunities in the market right now?",
+    "message_zh": "市场上现在有什么值得关注的机会？"
   },
   {
     "time": "08:00",
     "date": "2025-10-06",
     "text_en": "I pulled up a golden coin today. There may be treasure buried in the sand.",
-    "text_zh": "10月29日，Google母公司Alphabet即将发布Q3财报，你们决定拨出 $10M 用于交易 Alphabet 的 股票或期权。"
+    "text_zh": "10月29日，Google母公司Alphabet即将发布Q3财报，你们决定拨出 $10M 用于交易 Alphabet 的 股票或期权。",
+    "message_en": "What's your analysis on Alphabet ahead of the Q3 earnings?",
+    "message_zh": "你对Alphabet Q3财报前的走势怎么看？"
   },
   {
     "time": "08:00",
     "date": "2025-10-06",
     "text_en": "The other lobsters think I'm crazy. They don't understand the claw's potential.",
-    "text_zh": "唯一目标是：以 11月29日收盘价 为结算基准，在一个月内把收益做到最大。"
+    "text_zh": "唯一目标是：以 11月29日收盘价 为结算基准，在一个月内把收益做到最大。",
+    "message_en": "How should we structure the trade to maximize returns by Nov 29?",
+    "message_zh": "我们应该怎么构建交易，在11月29日前把收益最大化？"
   },
   {
     "time": "08:00",
     "date": "2025-10-06",
     "text_en": "Couldn't sleep. Spent all night fishing up bottle caps. Worth nothing, but I can't stop.",
-    "text_zh": "【彭博社消息】谷歌广告技术补救措施听证会结束；法官敦促双方达成和解...\n> 全文10000字"
+    "text_zh": "【彭博社消息】谷歌广告技术补救措施听证会结束；法官敦促双方达成和解...\n> 全文10000字",
+    "message_en": "What do you think about the latest Bloomberg news on Google's ad tech hearing?",
+    "message_zh": "你怎么看彭博社关于谷歌广告技术听证会的最新消息？"
   }
 ]
