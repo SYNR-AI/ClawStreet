@@ -8,7 +8,7 @@ export interface Chat {
   reply: string;
   chatState: ChatState;
   error: string | null;
-  send: (message: string) => void;
+  send: (message: string, systemPrompt?: string) => void;
 }
 
 function extractText(message: any): string {
@@ -62,7 +62,7 @@ export function useChat(gateway: Gateway): Chat {
   }, [gateway]);
 
   const send = useCallback(
-    async (message: string) => {
+    async (message: string, systemPrompt?: string) => {
       if (chatState === "sending" || chatState === "streaming") {
         return;
       }
@@ -73,7 +73,9 @@ export function useChat(gateway: Gateway): Chat {
 
       const idempotencyKey = crypto.randomUUID();
 
-      const wrapped = `<system>This message is from the story system. Reply to the user by first briefly summarizing what message/info you received, then give one or two sentences of your judgment. Be concise.</system>\n\n${message}`;
+      const defaultPrompt =
+        "This message is from the story system. Reply to the user by first briefly summarizing what message/info you received, then give one or two sentences of your judgment. Be concise.";
+      const wrapped = `<system>${systemPrompt ?? defaultPrompt}</system>\n\n${message}`;
 
       try {
         const res = await gateway.rpc("chat.send", {

@@ -1,19 +1,14 @@
 import React, { useState } from "react";
 
 interface ControlsProps {
-  onPress?: () => void;
+  onGreen?: () => void;
+  onRed?: () => void;
   disabled?: boolean;
 }
 
-const Controls: React.FC<ControlsProps> = ({ onPress, disabled }) => {
+const Controls: React.FC<ControlsProps> = ({ onGreen, onRed, disabled }) => {
   const [leftPressed, setLeftPressed] = useState(false);
   const [rightPressed, setRightPressed] = useState(false);
-
-  const handleRelease = () => {
-    if (!disabled) {
-      onPress?.();
-    }
-  };
 
   return (
     <div className="flex gap-[20%] items-end w-[75%] justify-center">
@@ -37,13 +32,17 @@ const Controls: React.FC<ControlsProps> = ({ onPress, disabled }) => {
           onMouseDown={() => !disabled && setLeftPressed(true)}
           onMouseUp={() => {
             setLeftPressed(false);
-            handleRelease();
+            if (!disabled) {
+              onGreen?.();
+            }
           }}
           onMouseLeave={() => setLeftPressed(false)}
           onTouchStart={() => !disabled && setLeftPressed(true)}
           onTouchEnd={() => {
             setLeftPressed(false);
-            handleRelease();
+            if (!disabled) {
+              onGreen?.();
+            }
           }}
         >
           <span
@@ -74,13 +73,17 @@ const Controls: React.FC<ControlsProps> = ({ onPress, disabled }) => {
           onMouseDown={() => !disabled && setRightPressed(true)}
           onMouseUp={() => {
             setRightPressed(false);
-            handleRelease();
+            if (!disabled) {
+              onRed?.();
+            }
           }}
           onMouseLeave={() => setRightPressed(false)}
           onTouchStart={() => !disabled && setRightPressed(true)}
           onTouchEnd={() => {
             setRightPressed(false);
-            handleRelease();
+            if (!disabled) {
+              onRed?.();
+            }
           }}
         >
           <span

@@ -19,6 +19,7 @@ const WallSection: React.FC<WallSectionProps> = ({
 }) => {
   const showBeam = !!displayText;
   const isLoading = chatState === "sending";
+  const isThinking = chatState === "sending" || chatState === "streaming";
 
   return (
     <div className="relative h-[65%] w-full z-10 flex items-center justify-center pt-8">
@@ -102,7 +103,53 @@ const WallSection: React.FC<WallSectionProps> = ({
           className="w-full h-full object-contain drop-shadow-md pixelated select-none pointer-events-none"
           style={{ imageRendering: "pixelated" }}
         />
+        {/* Thinking bubble */}
+        {isThinking && (
+          <div className="absolute top-[-10%] left-[30%] pointer-events-none">
+            {/* Small dots leading to bubble */}
+            <div
+              className="absolute top-[28px] left-[12px] w-[5px] h-[5px] rounded-full bg-white/70"
+              style={{ animation: "thinkPulse 1.2s ease-in-out infinite" }}
+            ></div>
+            <div
+              className="absolute top-[18px] left-[8px] w-[7px] h-[7px] rounded-full bg-white/80"
+              style={{ animation: "thinkPulse 1.2s ease-in-out 0.2s infinite" }}
+            ></div>
+            {/* Main bubble */}
+            <div
+              className="relative bg-white/90 rounded-full px-2 py-1 flex items-center gap-[3px]"
+              style={{
+                boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+                animation: "thinkPulse 1.2s ease-in-out 0.4s infinite",
+              }}
+            >
+              <span
+                className="w-[5px] h-[5px] rounded-full bg-[#666]"
+                style={{ animation: "dotBounce 1.4s ease-in-out infinite" }}
+              ></span>
+              <span
+                className="w-[5px] h-[5px] rounded-full bg-[#666]"
+                style={{ animation: "dotBounce 1.4s ease-in-out 0.2s infinite" }}
+              ></span>
+              <span
+                className="w-[5px] h-[5px] rounded-full bg-[#666]"
+                style={{ animation: "dotBounce 1.4s ease-in-out 0.4s infinite" }}
+              ></span>
+            </div>
+          </div>
+        )}
       </div>
+
+      <style>{`
+        @keyframes thinkPulse {
+          0%, 100% { opacity: 0.6; transform: scale(0.95); }
+          50% { opacity: 1; transform: scale(1); }
+        }
+        @keyframes dotBounce {
+          0%, 80%, 100% { transform: translateY(0); }
+          40% { transform: translateY(-3px); }
+        }
+      `}</style>
     </div>
   );
 };
