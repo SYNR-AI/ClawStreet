@@ -58,119 +58,142 @@ export function useGateway(): Gateway {
     };
   }, []);
 
-  const connect = useCallback(() => {
-    if (unmounted.current) {
-      return;
-    }
-    setStatus("connecting");
+  useEffect(() => {
+    unmounted.current = false;
+    let ws: WebSocket | null = null;
 
-    const ws = new WebSocket(GATEWAY_WS_URL);
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      console.log("[gateway] ws open");
-    };
-
-    ws.onmessage = async (ev) => {
-      let msg: any;
-      try {
-        msg = JSON.parse(typeof ev.data === "string" ? ev.data : await ev.data.text());
-      } catch {
+    const init = () => {
+      if (unmounted.current) {
         return;
       }
+      setStatus("connecting");
 
-      // Handle RPC responses
-      if (msg.type === "res") {
-        const entry = pendingRpc.current.get(msg.id);
-        if (entry) {
-          pendingRpc.current.delete(msg.id);
-          if (msg.ok) {
-            entry.resolve(msg.payload);
-          } else {
-            entry.reject(new Error(msg.error?.message ?? "rpc error"));
-          }
+      ws = new WebSocket(GATEWAY_WS_URL);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        console.log("[gateway] ws open");
+      };
+
+      ws.onmessage = async (ev) => {
+        if (ws !== wsRef.current) {
+          return;
         }
-        return;
-      }
+        let msg: any;
+        try {
+          msg = JSON.parse(typeof ev.data === "string" ? ev.data : await ev.data.text());
+        } catch {
+          return;
+        }
 
-      // Handle events
-      if (msg.type === "event") {
-        // Auto-handshake on connect.challenge
-        if (msg.event === "connect.challenge") {
-          try {
-            await rpc("connect", {
-              minProtocol: 3,
-              maxProtocol: 3,
-              client: {
-                id: "gateway-client",
-                displayName: "Sandbox Frontend",
-                version: "0.1.0",
-                platform: "browser",
-                mode: "backend",
-              },
-              auth: { token: GATEWAY_TOKEN },
-              role: "operator",
-              scopes: ["operator.admin"],
-            });
-            retryCount.current = 0;
-            if (!unmounted.current) {
-              setStatus("connected");
-            }
-            console.log("[gateway] connected");
-          } catch (err: any) {
-            console.error("[gateway] handshake failed:", err.message);
-            if (!unmounted.current) {
-              setStatus("error");
+        // Handle RPC responses
+        if (msg.type === "res") {
+          const entry = pendingRpc.current.get(msg.id);
+          if (entry) {
+            pendingRpc.current.delete(msg.id);
+            if (msg.ok) {
+              entry.resolve(msg.payload);
+            } else {
+              entry.reject(new Error(msg.error?.message ?? "rpc error"));
             }
           }
           return;
         }
 
-        // Dispatch to listeners
-        const listeners = eventListeners.current.get(msg.event);
-        if (listeners) {
-          for (const handler of listeners) {
+        // Handle events
+        if (msg.type === "event") {
+          // Auto-handshake on connect.challenge
+          if (msg.event === "connect.challenge") {
             try {
-              handler(msg.payload);
-            } catch (e) {
-              console.error("[gateway] event handler error:", e);
+              await rpc("connect", {
+                minProtocol: 3,
+                maxProtocol: 3,
+                client: {
+                  id: "gateway-client",
+                  displayName: "Sandbox Frontend",
+                  version: "0.1.0",
+                  platform: "browser",
+                  mode: "backend",
+                },
+                auth: { token: GATEWAY_TOKEN },
+                role: "operator",
+                scopes: ["operator.admin"],
+              });
+              retryCount.current = 0;
+              if (!unmounted.current && ws === wsRef.current) {
+                setStatus("connected");
+              }
+              console.log("[gateway] connected");
+            } catch (err: any) {
+              console.error("[gateway] handshake failed:", err.message);
+              if (!unmounted.current && ws === wsRef.current) {
+                setStatus("error");
+              }
+            }
+            return;
+          }
+
+          // Dispatch to listeners
+          const listeners = eventListeners.current.get(msg.event);
+          if (listeners) {
+            for (const handler of listeners) {
+              try {
+                handler(msg.payload);
+              } catch (e) {
+                console.error("[gateway] event handler error:", e);
+              }
             }
           }
         }
-      }
+      };
+
+      ws.onclose = (ev) => {
+        if (ws !== wsRef.current) {
+          return;
+        }
+        console.log("[gateway] ws closed, code:", ev.code, "reason:", ev.reason);
+        if (unmounted.current) {
+          return;
+        }
+
+        setStatus("disconnected");
+        // Reject all pending RPCs
+        for (const [id, entry] of pendingRpc.current) {
+          entry.reject(new Error("WebSocket closed"));
+        }
+        pendingRpc.current.clear();
+
+        // Auto-reconnect with exponential backoff
+        const delay = Math.min(1000 * 2 ** retryCount.current, 10_000);
+        retryCount.current++;
+        retryTimer.current = setTimeout(init, delay);
+      };
+
+      ws.onerror = (err) => {
+        if (ws !== wsRef.current) {
+          return;
+        }
+        console.error("[gateway] ws error", err);
+      };
     };
 
-    ws.onclose = (ev) => {
-      console.log("[gateway] ws closed, code:", ev.code, "reason:", ev.reason);
+    const timer = setTimeout(() => {
       if (unmounted.current) {
         return;
       }
-      setStatus("disconnected");
-      // Reject all pending RPCs
-      for (const [id, entry] of pendingRpc.current) {
-        entry.reject(new Error("WebSocket closed"));
-      }
-      pendingRpc.current.clear();
-      // Auto-reconnect with exponential backoff
-      const delay = Math.min(1000 * 2 ** retryCount.current, 10_000);
-      retryCount.current++;
-      retryTimer.current = setTimeout(connect, delay);
-    };
+      init();
+    }, 50);
 
-    ws.onerror = (err) => {
-      console.error("[gateway] ws error", err);
-    };
-  }, [rpc]);
-
-  useEffect(() => {
-    unmounted.current = false;
-    connect();
     return () => {
       unmounted.current = true;
+      clearTimeout(timer);
       clearTimeout(retryTimer.current);
-      wsRef.current?.close();
+      if (ws) {
+        ws.close();
+      }
+      wsRef.current = null;
     };
-  }, [connect]);
+  }, [rpc]);
 
   return { status, rpc, onEvent };
 }
