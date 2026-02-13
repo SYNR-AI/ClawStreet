@@ -1,14 +1,46 @@
 {
   "en": [
-    "Welcome back to 2025-10-06. This is the ClawCapital office on 42nd Street, Midtown Manhattan.",
-    "You are the fund manager of ClawCapital. You hired a lobster as your senior analyst.",
-    "On Oct 29, Alphabet (Google's parent) will release Q3 earnings. Your fund holds $100M in cash and 500K shares of GOOG. You may only buy or sell GOOG spot shares.",
-    "Your only goal: maximize total portfolio value by Nov 29 closing price."
+    [
+      "Welcome back to October 6, 2025. This is the ClawCapital office on 42nd Street, Midtown Manhattan.",
+      "You are the fund manager of ClawCapital.",
+      "You hired a lobster as your senior analyst — don't ask why, it just reads the market better than humans.",
+      "Alphabet (Google's parent) will release Q3 earnings on October 29. Your fund currently holds $100M in cash and 500,000 shares of GOOG."
+    ],
+    [
+      "The game pushes market news to your lobster analyst along a timeline.",
+      "For each message, the lobster will give: a summary, one sentence of analysis, and a trade recommendation (BUY / SELL / HOLD with a specific amount).",
+      "Press the green button O to agree — the trade will be executed.",
+      "Press the red button X to disagree — the trade will be skipped.",
+      "Either way, the next message arrives automatically.",
+      "Tap the scroll on the clock at any time to check your portfolio and trade history."
+    ],
+    [
+      "You may only buy or sell GOOG spot shares. The trade price is based on the market price at the time of the message.",
+      "The lobster will know whether you agreed or disagreed with its last call.",
+      "Goal: maximize your total portfolio value by the November 29 closing price.",
+      "Good luck, Manager."
+    ]
   ],
   "zh": [
-    "欢迎回到 2025年10月6日，这里是曼哈顿中城，第42街的ClawCapital办公室。",
-    "你是ClawCapital基金的基金经理，你雇佣了一只龙虾作为高级分析师。",
-    "10月29日，Google母公司Alphabet即将发布Q3财报。基金当前持有 $100M 现金和 50万股 GOOG。你只能进行 GOOG 现货买卖操作。",
-    "唯一目标是：以 11月29日收盘价为结算基准，最大化投资组合总价值。"
+    [
+      "欢迎回到 2025年10月6日，这里是曼哈顿中城，第42街的 ClawCapital 办公室。",
+      "你是 ClawCapital 基金的基金经理。",
+      "你雇佣了一只龙虾作为高级分析师——别问为什么，它就是比人类更会看盘。",
+      "Google 母公司 Alphabet 将在 10月29日发布 Q3 财报。基金当前持有 $100M 现金和 50万股 GOOG。"
+    ],
+    [
+      "游戏会按时间线向你的龙虾分析师推送市场消息。",
+      "每条消息龙虾会给出：摘要、一句分析、以及操作建议（买入/卖出/持有，附具体数量）。",
+      "按绿色按钮 O 表示认同——交易将被执行。",
+      "按红色按钮 X 表示否决——交易将被跳过。",
+      "无论哪种选择，下一条消息都会自动到来。",
+      "点击左下方电子钟上的卷轴，可以随时查看持仓和交易记录。"
+    ],
+    [
+      "你只能进行 GOOG 现货股票的买卖，交易价格基于当前消息时间点的市场价。",
+      "龙虾会知道你是否认同了它上一次的建议。",
+      "目标：以 11月29日收盘价为结算基准，最大化投资组合总价值。",
+      "祝你好运，经理。"
+    ]
   ]
 }

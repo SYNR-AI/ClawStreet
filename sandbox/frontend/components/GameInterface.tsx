@@ -8,27 +8,30 @@ import DeskSection from "./DeskSection";
 import WallSection from "./WallSection";
 
 const isChinese = /^zh\b/i.test(navigator.language);
-const introLines = isChinese ? intro.zh : intro.en;
+const introPages = isChinese ? intro.zh : intro.en;
+const introTitles = isChinese
+  ? ["故事背景", "基本玩法", "详细规则"]
+  : ["BRIEFING", "HOW TO PLAY", "RULES"];
 
-const SUMMARY_PROMPT = isChinese
-  ? "这条消息来自剧情系统。请用1-2句话简短总结你收到了什么消息/信息，再用一句话给出你的初步判断。"
-  : "This message is from the story system. Briefly summarize what message/info you received in 1-2 sentences, then add one sentence of your initial judgment.";
-
-const ANALYSIS_PROMPT = isChinese
-  ? `这是来自基金经理的指令。请对刚才收到的消息进行深入分析，给出投资相关的判断和建议。简洁有力。
-你只能建议买入或卖出 GOOG 现货股票。分析结尾必须用以下格式给出操作建议（只选一个）：
+const SYSTEM_PROMPT = isChinese
+  ? `你是基金的高级分析师。收到市场消息后，请给出：
+1. 摘要：1-2句话总结消息内容
+2. 分析：1句话给出你对投资决策的判断
+3. 操作建议：必须用以下格式（只选一个）：
 【操作】BUY <数量> GOOG
 【操作】SELL <数量> GOOG
 【操作】HOLD
 示例：【操作】BUY 50000 GOOG`
-  : `This is an instruction from the fund manager. Analyze the message you just received in depth. Give investment-related judgment and recommendations. Be concise but insightful.
-You may only recommend buying or selling GOOG spot shares. End your analysis with exactly one trade recommendation in this format:
+  : `You are the fund's senior analyst. When you receive market news, respond with:
+1. Summary: 1-2 sentences summarizing the message
+2. Analysis: 1 sentence of your investment judgment
+3. Trade recommendation in exactly this format (pick one):
 [ACTION] BUY <qty> GOOG
 [ACTION] SELL <qty> GOOG
 [ACTION] HOLD
 Example: [ACTION] BUY 50000 GOOG`;
 
-type Phase = "idle" | "summarizing" | "awaiting_decision" | "analyzing" | "awaiting_trade";
+type Phase = "idle" | "processing" | "awaiting_action";
 
 interface Trade {
   side: "BUY" | "SELL";
@@ -63,6 +66,7 @@ const GameInterface: React.FC = () => {
   const chat = useChat(gateway);
   const [messageIndex, setMessageIndex] = useState(0);
   const [showIntro, setShowIntro] = useState(true);
+  const [introPage, setIntroPage] = useState(0);
   const [phase, setPhase] = useState<Phase>("idle");
   const [scrollOpen, setScrollOpen] = useState(false);
   const [portfolio, setPortfolio] = useState<Portfolio>(initialPortfolio as Portfolio);
@@ -77,39 +81,58 @@ const GameInterface: React.FC = () => {
   const portfolioRef = useRef(portfolio);
   portfolioRef.current = portfolio;
 
-  const sendSummaryRef = useRef<(index: number) => void>(() => {});
-  sendSummaryRef.current = (index: number) => {
+  const sendMessageRef = useRef<(index: number, feedback?: "agree" | "disagree") => void>(() => {});
+  sendMessageRef.current = (index: number, feedback?: "agree" | "disagree") => {
     const m = messages[index];
-    const text = isChinese ? m.message_zh : m.message_en;
-    chat.send(text, SUMMARY_PROMPT);
-    setPhase("summarizing");
+    const newsText = isChinese ? m.message_zh : m.message_en;
+
+    const p = portfolioRef.current;
+    const cashM = (p.cash / 1e6).toFixed(1);
+    const goog = p.holdings.find((h) => h.symbol === "GOOG");
+    const qtyStr = goog ? `${(goog.qty / 1000).toFixed(0)}K` : "0";
+    const avgStr = goog ? `$${goog.avgPrice.toFixed(0)}` : "-";
+
+    const portfolioLine = isChinese
+      ? `当前持仓：现金 $${cashM}M，GOOG ${qtyStr}股（均价 ${avgStr}）`
+      : `Current portfolio: Cash $${cashM}M, GOOG ${qtyStr} shares (avg ${avgStr})`;
+
+    let feedbackLine = "";
+    if (feedback === "agree") {
+      feedbackLine = isChinese
+        ? "（基金经理认同了你上一条建议，已执行交易。）\n\n"
+        : "(The fund manager agreed with your last recommendation and executed the trade.)\n\n";
+    } else if (feedback === "disagree") {
+      feedbackLine = isChinese
+        ? "（基金经理否决了你上一条建议，未执行交易。）\n\n"
+        : "(The fund manager rejected your last recommendation. No trade was executed.)\n\n";
+    }
+
+    chat.send(`${feedbackLine}${portfolioLine}\n\n${newsText}`, SYSTEM_PROMPT);
+    setPhase("processing");
   };
 
-  // Phase transitions on chat completion
+  // Phase transition on chat completion
   useEffect(() => {
     if (chat.chatState !== "done") {
       return;
     }
-
-    if (phase === "summarizing") {
-      setPhase("awaiting_decision");
-    } else if (phase === "analyzing") {
+    if (phase === "processing") {
       const trade = parseTrade(chat.reply);
       setPendingTrade(trade);
-      setPhase("awaiting_trade");
+      setPhase("awaiting_action");
     }
   }, [chat.chatState, phase, chat.reply]);
 
   const handleStart = () => {
     setShowIntro(false);
-    sendSummaryRef.current(0);
+    sendMessageRef.current(0);
   };
 
-  const advanceToNext = useCallback(() => {
+  const advanceToNext = useCallback((feedback: "agree" | "disagree") => {
     const nextIdx = (messageIndexRef.current + 1) % messages.length;
     setMessageIndex(nextIdx);
     setPendingTrade(null);
-    sendSummaryRef.current(nextIdx);
+    sendMessageRef.current(nextIdx, feedback);
   }, []);
 
   const executeTrade = useCallback((trade: Trade) => {
@@ -161,37 +184,26 @@ const GameInterface: React.FC = () => {
     });
   }, []);
 
-  // Green: awaiting_decision → analyze; awaiting_trade → accept trade + next
+  // Green: agree — execute trade + next
   const handleGreen = useCallback(() => {
-    if (phase === "awaiting_decision") {
-      setPhase("analyzing");
-      const p = portfolioRef.current;
-      const cashM = (p.cash / 1e6).toFixed(1);
-      const goog = p.holdings.find((h) => h.symbol === "GOOG");
-      const qtyStr = goog ? `${(goog.qty / 1000).toFixed(0)}K` : "0";
-      const avgStr = goog ? `$${goog.avgPrice.toFixed(0)}` : "-";
-
-      const analysisMsg = isChinese
-        ? `请深入分析这条消息对投资决策的影响，给出你的判断和操作建议。\n当前持仓：现金 $${cashM}M，GOOG ${qtyStr}股（均价 ${avgStr}）`
-        : `Analyze this message in depth. Current portfolio: Cash $${cashM}M, GOOG ${qtyStr} shares (avg ${avgStr})`;
-      chat.send(analysisMsg, ANALYSIS_PROMPT);
-    } else if (phase === "awaiting_trade") {
-      if (pendingTrade) {
-        executeTrade(pendingTrade);
-      }
-      advanceToNext();
+    if (phase !== "awaiting_action") {
+      return;
     }
-  }, [phase, chat, pendingTrade, executeTrade, advanceToNext]);
+    if (pendingTrade) {
+      executeTrade(pendingTrade);
+    }
+    advanceToNext("agree");
+  }, [phase, pendingTrade, executeTrade, advanceToNext]);
 
-  // Red: awaiting_decision → skip to next; awaiting_trade → discard trade + next
+  // Red: disagree — skip trade + next
   const handleRed = useCallback(() => {
-    if (phase === "awaiting_decision" || phase === "awaiting_trade") {
-      advanceToNext();
+    if (phase !== "awaiting_action") {
+      return;
     }
+    advanceToNext("disagree");
   }, [phase, advanceToNext]);
 
-  const buttonsDisabled =
-    (phase !== "awaiting_decision" && phase !== "awaiting_trade") || showIntro;
+  const buttonsDisabled = phase !== "awaiting_action" || showIntro;
 
   return (
     <div className="relative w-full h-full flex flex-col no-select">
@@ -215,7 +227,7 @@ const GameInterface: React.FC = () => {
         <DeskSection onGreen={handleGreen} onRed={handleRed} disabled={buttonsDisabled} />
       )}
 
-      {/* Intro modal */}
+      {/* Intro modal — paginated */}
       {showIntro && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/70">
           <div
@@ -230,10 +242,10 @@ const GameInterface: React.FC = () => {
               className="font-press-start text-[14px] text-[#b8cc33] text-center mb-5"
               style={{ textShadow: "0 0 6px rgba(184,204,51,0.5)" }}
             >
-              {isChinese ? "故事背景" : "BRIEFING"}
+              {introTitles[introPage]}
             </h2>
             <div className="space-y-3 mb-6">
-              {introLines.map((line, i) => (
+              {introPages[introPage].map((line: string, i: number) => (
                 <p
                   key={i}
                   className={
@@ -250,27 +262,63 @@ const GameInterface: React.FC = () => {
                 </p>
               ))}
             </div>
-            <button
-              onClick={handleStart}
-              disabled={gateway.status !== "connected"}
-              className={`
-                w-full py-3 rounded font-press-start text-[11px] tracking-wider
-                transition-colors duration-200
-                ${
-                  gateway.status === "connected"
-                    ? "bg-[#b8cc33] text-black hover:bg-[#d0e040] cursor-pointer"
-                    : "bg-[#444] text-[#888] cursor-not-allowed"
-                }
-              `}
-            >
-              {gateway.status === "connected"
-                ? isChinese
-                  ? "开始游戏"
-                  : "START"
-                : isChinese
-                  ? "连接中..."
-                  : "CONNECTING..."}
-            </button>
+
+            {/* Page indicator */}
+            <div className="flex justify-center gap-2 mb-4">
+              {introPages.map((_: any, i: number) => (
+                <div
+                  key={i}
+                  className="w-2 h-2 rounded-full transition-colors"
+                  style={{
+                    backgroundColor: i === introPage ? "#b8cc33" : "#444",
+                  }}
+                />
+              ))}
+            </div>
+
+            {/* Navigation */}
+            <div className="flex gap-3">
+              {introPage > 0 && (
+                <button
+                  onClick={() => setIntroPage((p) => p - 1)}
+                  className="flex-1 py-3 rounded font-press-start text-[11px] tracking-wider
+                    transition-colors duration-200 border border-[#555] text-[#999] hover:text-white hover:border-[#888] cursor-pointer"
+                >
+                  {isChinese ? "上一页" : "BACK"}
+                </button>
+              )}
+              {introPage < introPages.length - 1 ? (
+                <button
+                  onClick={() => setIntroPage((p) => p + 1)}
+                  className="flex-1 py-3 rounded font-press-start text-[11px] tracking-wider
+                    transition-colors duration-200 bg-[#b8cc33] text-black hover:bg-[#d0e040] cursor-pointer"
+                >
+                  {isChinese ? "下一页" : "NEXT"}
+                </button>
+              ) : (
+                <button
+                  onClick={handleStart}
+                  disabled={gateway.status !== "connected"}
+                  className={`
+                    flex-1 py-3 rounded font-press-start text-[11px] tracking-wider
+                    transition-colors duration-200
+                    ${
+                      gateway.status === "connected"
+                        ? "bg-[#b8cc33] text-black hover:bg-[#d0e040] cursor-pointer"
+                        : "bg-[#444] text-[#888] cursor-not-allowed"
+                    }
+                  `}
+                >
+                  {gateway.status === "connected"
+                    ? isChinese
+                      ? "开始游戏"
+                      : "START"
+                    : isChinese
+                      ? "连接中..."
+                      : "CONNECTING..."}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
