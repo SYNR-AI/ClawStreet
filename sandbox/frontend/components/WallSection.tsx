@@ -8,6 +8,13 @@ interface WallSectionProps {
   isChinese?: boolean;
   overrideTime?: string;
   overrideDate?: string;
+  scrollOpen: boolean;
+  onScrollToggle: (open: boolean) => void;
+  portfolio: {
+    cash: number;
+    holdings: { symbol: string; qty: number; avgPrice: number }[];
+    trades: { side: string; symbol: string; qty: number; price: number; date: string }[];
+  };
 }
 
 const WallSection: React.FC<WallSectionProps> = ({
@@ -16,6 +23,9 @@ const WallSection: React.FC<WallSectionProps> = ({
   isChinese,
   overrideTime,
   overrideDate,
+  scrollOpen,
+  onScrollToggle,
+  portfolio,
 }) => {
   const showBeam = !!displayText;
   const isLoading = chatState === "sending";
@@ -91,6 +101,128 @@ const WallSection: React.FC<WallSectionProps> = ({
       <div className="absolute left-[7%] bottom-[-6%] w-[35%] h-[15%] flex items-center justify-center transform rotate-1 opacity-90">
         <Clock overrideTime={overrideTime} overrideDate={overrideDate} />
       </div>
+      {/* Scroll on clock */}
+      <img
+        src="/scroll.png"
+        alt="Scroll"
+        className="absolute z-30 select-none cursor-pointer"
+        style={{
+          left: "2%",
+          bottom: "11%",
+          width: "45%",
+          imageRendering: "pixelated",
+        }}
+        onClick={() => onScrollToggle(true)}
+      />
+      {/* Scroll modal */}
+      {scrollOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ backdropFilter: "blur(6px)", backgroundColor: "rgba(0,0,0,0.6)" }}
+          onClick={() => onScrollToggle(false)}
+        >
+          <div
+            className="relative w-[100%] max-w-sm"
+            style={{ maxHeight: "80vh" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src="/open_scroll.png"
+              alt="Open Scroll"
+              className="w-full h-auto select-none"
+              style={{ imageRendering: "pixelated" }}
+            />
+            {/* Portfolio content on scroll */}
+            <div
+              className="absolute overflow-y-auto overscroll-contain"
+              style={{
+                top: "15%",
+                bottom: "15%",
+                left: "18%",
+                right: "18%",
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: "system-ui, -apple-system, sans-serif",
+                  fontWeight: 500,
+                  color: "#5a4630",
+                }}
+              >
+                <h3
+                  className="text-center font-bold mb-2"
+                  style={{ fontSize: isChinese ? "14px" : "10px" }}
+                >
+                  {isChinese ? "- 持仓总览 -" : "- PORTFOLIO -"}
+                </h3>
+                <div
+                  className="mb-3"
+                  style={{ fontSize: isChinese ? "12px" : "8px", lineHeight: "1.8" }}
+                >
+                  <div className="flex justify-between">
+                    <span>{isChinese ? "现金" : "Cash"}</span>
+                    <span>${(portfolio.cash / 1e6).toFixed(2)}M</span>
+                  </div>
+                  {portfolio.holdings.length > 0 ? (
+                    portfolio.holdings.map((h: any, i: number) => (
+                      <div key={i} className="flex justify-between">
+                        <span>
+                          {h.symbol} ×{h.qty}
+                        </span>
+                        <span>${((h.qty * h.avgPrice) / 1e6).toFixed(2)}M</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div
+                      className="text-center opacity-60"
+                      style={{ fontSize: isChinese ? "11px" : "7px" }}
+                    >
+                      {isChinese ? "暂无持仓" : "No holdings"}
+                    </div>
+                  )}
+                </div>
+
+                <div
+                  className="border-t pt-2"
+                  style={{ borderColor: "#b8a080", fontSize: isChinese ? "12px" : "8px" }}
+                >
+                  <h3
+                    className="text-center font-bold mb-2"
+                    style={{ fontSize: isChinese ? "14px" : "10px" }}
+                  >
+                    {isChinese ? "- 交易记录 -" : "- TRADES -"}
+                  </h3>
+                  {portfolio.trades.length > 0 ? (
+                    <div style={{ lineHeight: "1.8" }}>
+                      {portfolio.trades.map((t: any, i: number) => (
+                        <div key={i} className="mb-1">
+                          <div className="flex justify-between">
+                            <span style={{ fontWeight: "bold" }}>
+                              {t.side} {t.symbol}
+                            </span>
+                            <span>{t.date}</span>
+                          </div>
+                          <div className="flex justify-between opacity-80">
+                            <span>×{t.qty}</span>
+                            <span>@${t.price}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div
+                      className="text-center opacity-60"
+                      style={{ fontSize: isChinese ? "11px" : "7px" }}
+                    >
+                      {isChinese ? "暂无交易" : "No trades yet"}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Lobster */}
       <div className="absolute right-[5%] bottom-[-15%] w-[30%] aspect-square z-30">
         <div className="absolute bottom-[8%] left-[8%] w-[80%] h-[25%] bg-black/30 rounded-[50%] blur-sm transform scale-y-50"></div>

@@ -1,0 +1,5 @@
+{
+  "cash": 100000000,
+  "holdings": [{ "symbol": "GOOG", "qty": 500000, "avgPrice": 250.0 }],
+  "trades": []
+}

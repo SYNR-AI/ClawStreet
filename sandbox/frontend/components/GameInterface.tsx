@@ -3,6 +3,7 @@ import { useChat } from "../hooks/useChat";
 import { useGateway } from "../hooks/useGateway";
 import intro from "../intro.json";
 import messages from "../messages.json";
+import initialPortfolio from "../portfolio.json";
 import DeskSection from "./DeskSection";
 import WallSection from "./WallSection";
 
@@ -10,14 +11,52 @@ const isChinese = /^zh\b/i.test(navigator.language);
 const introLines = isChinese ? intro.zh : intro.en;
 
 const SUMMARY_PROMPT = isChinese
-  ? "这条消息来自剧情系统。请用1-2句话简短总结你收到了什么消息/信息。不要分析，不要给出判断或建议。"
-  : "This message is from the story system. Briefly summarize what message/info you received in 1-2 sentences. Do NOT analyze, judge, or give recommendations.";
+  ? "这条消息来自剧情系统。请用1-2句话简短总结你收到了什么消息/信息，再用一句话给出你的初步判断。"
+  : "This message is from the story system. Briefly summarize what message/info you received in 1-2 sentences, then add one sentence of your initial judgment.";
 
 const ANALYSIS_PROMPT = isChinese
-  ? "这是来自基金经理的指令。请对刚才收到的消息进行深入分析，给出投资相关的判断和建议。简洁有力。"
-  : "This is an instruction from the fund manager. Analyze the message you just received in depth. Give investment-related judgment and recommendations. Be concise but insightful.";
+  ? `这是来自基金经理的指令。请对刚才收到的消息进行深入分析，给出投资相关的判断和建议。简洁有力。
+你只能建议买入或卖出 GOOG 现货股票。分析结尾必须用以下格式给出操作建议（只选一个）：
+【操作】BUY <数量> GOOG
+【操作】SELL <数量> GOOG
+【操作】HOLD
+示例：【操作】BUY 50000 GOOG`
+  : `This is an instruction from the fund manager. Analyze the message you just received in depth. Give investment-related judgment and recommendations. Be concise but insightful.
+You may only recommend buying or selling GOOG spot shares. End your analysis with exactly one trade recommendation in this format:
+[ACTION] BUY <qty> GOOG
+[ACTION] SELL <qty> GOOG
+[ACTION] HOLD
+Example: [ACTION] BUY 50000 GOOG`;
 
-type Phase = "idle" | "summarizing" | "awaiting_decision" | "analyzing" | "analysis_done";
+type Phase = "idle" | "summarizing" | "awaiting_decision" | "analyzing" | "awaiting_trade";
+
+interface Trade {
+  side: "BUY" | "SELL";
+  qty: number;
+  symbol: string;
+}
+
+interface Portfolio {
+  cash: number;
+  holdings: { symbol: string; qty: number; avgPrice: number }[];
+  trades: { side: string; symbol: string; qty: number; price: number; date: string }[];
+}
+
+function parseTrade(text: string): Trade | null {
+  const match = text.match(/(?:【操作】|\[ACTION\])\s*(BUY|SELL|HOLD)\s*(\d*)\s*(GOOG)?/i);
+  if (!match) {
+    return null;
+  }
+  const side = match[1].toUpperCase();
+  if (side === "HOLD") {
+    return null;
+  }
+  const qty = parseInt(match[2], 10);
+  if (!qty || qty <= 0) {
+    return null;
+  }
+  return { side: side as "BUY" | "SELL", qty, symbol: "GOOG" };
+}
 
 const GameInterface: React.FC = () => {
   const gateway = useGateway();
@@ -25,12 +64,18 @@ const GameInterface: React.FC = () => {
   const [messageIndex, setMessageIndex] = useState(0);
   const [showIntro, setShowIntro] = useState(true);
   const [phase, setPhase] = useState<Phase>("idle");
+  const [scrollOpen, setScrollOpen] = useState(false);
+  const [portfolio, setPortfolio] = useState<Portfolio>(initialPortfolio as Portfolio);
+  const [pendingTrade, setPendingTrade] = useState<Trade | null>(null);
 
   const msg = messages[messageIndex];
 
-  // Refs to avoid stale closures in timeouts
+  // Refs to avoid stale closures
   const messageIndexRef = useRef(messageIndex);
   messageIndexRef.current = messageIndex;
+
+  const portfolioRef = useRef(portfolio);
+  portfolioRef.current = portfolio;
 
   const sendSummaryRef = useRef<(index: number) => void>(() => {});
   sendSummaryRef.current = (index: number) => {
@@ -49,10 +94,11 @@ const GameInterface: React.FC = () => {
     if (phase === "summarizing") {
       setPhase("awaiting_decision");
     } else if (phase === "analyzing") {
-      // Analysis done — wait for user to click a button
-      setPhase("analysis_done");
+      const trade = parseTrade(chat.reply);
+      setPendingTrade(trade);
+      setPhase("awaiting_trade");
     }
-  }, [chat.chatState, phase]);
+  }, [chat.chatState, phase, chat.reply]);
 
   const handleStart = () => {
     setShowIntro(false);
@@ -62,30 +108,90 @@ const GameInterface: React.FC = () => {
   const advanceToNext = useCallback(() => {
     const nextIdx = (messageIndexRef.current + 1) % messages.length;
     setMessageIndex(nextIdx);
+    setPendingTrade(null);
     sendSummaryRef.current(nextIdx);
   }, []);
 
-  // Green: awaiting_decision → analyze; analysis_done → next message
+  const executeTrade = useCallback((trade: Trade) => {
+    const currentMsg = messages[messageIndexRef.current] as any;
+    const price: number = currentMsg.googPrice ?? 253;
+
+    setPortfolio((prev) => {
+      const next: Portfolio = {
+        cash: prev.cash,
+        holdings: prev.holdings.map((h) => ({ ...h })),
+        trades: [...prev.trades],
+      };
+
+      if (trade.side === "BUY") {
+        const cost = trade.qty * price;
+        if (cost > next.cash) {
+          return prev;
+        } // can't afford
+        next.cash -= cost;
+        const existing = next.holdings.find((h) => h.symbol === trade.symbol);
+        if (existing) {
+          const totalCost = existing.qty * existing.avgPrice + cost;
+          existing.qty += trade.qty;
+          existing.avgPrice = totalCost / existing.qty;
+        } else {
+          next.holdings.push({ symbol: trade.symbol, qty: trade.qty, avgPrice: price });
+        }
+      } else {
+        const existing = next.holdings.find((h) => h.symbol === trade.symbol);
+        if (!existing || existing.qty < trade.qty) {
+          return prev;
+        } // can't sell
+        next.cash += trade.qty * price;
+        existing.qty -= trade.qty;
+        if (existing.qty === 0) {
+          next.holdings = next.holdings.filter((h) => h.symbol !== trade.symbol);
+        }
+      }
+
+      next.trades.push({
+        side: trade.side,
+        symbol: trade.symbol,
+        qty: trade.qty,
+        price,
+        date: currentMsg.date,
+      });
+
+      return next;
+    });
+  }, []);
+
+  // Green: awaiting_decision → analyze; awaiting_trade → accept trade + next
   const handleGreen = useCallback(() => {
     if (phase === "awaiting_decision") {
       setPhase("analyzing");
+      const p = portfolioRef.current;
+      const cashM = (p.cash / 1e6).toFixed(1);
+      const goog = p.holdings.find((h) => h.symbol === "GOOG");
+      const qtyStr = goog ? `${(goog.qty / 1000).toFixed(0)}K` : "0";
+      const avgStr = goog ? `$${goog.avgPrice.toFixed(0)}` : "-";
+
       const analysisMsg = isChinese
-        ? "请深入分析这条消息对投资决策的影响，给出你的判断。"
-        : "Please analyze this message in depth. What are the implications for our investment decisions?";
+        ? `请深入分析这条消息对投资决策的影响，给出你的判断和操作建议。\n当前持仓：现金 $${cashM}M，GOOG ${qtyStr}股（均价 ${avgStr}）`
+        : `Analyze this message in depth. Current portfolio: Cash $${cashM}M, GOOG ${qtyStr} shares (avg ${avgStr})`;
       chat.send(analysisMsg, ANALYSIS_PROMPT);
-    } else if (phase === "analysis_done") {
+    } else if (phase === "awaiting_trade") {
+      if (pendingTrade) {
+        executeTrade(pendingTrade);
+      }
       advanceToNext();
     }
-  }, [phase, chat, advanceToNext]);
+  }, [phase, chat, pendingTrade, executeTrade, advanceToNext]);
 
-  // Red: awaiting_decision → skip to next; analysis_done → next message
+  // Red: awaiting_decision → skip to next; awaiting_trade → discard trade + next
   const handleRed = useCallback(() => {
-    if (phase === "awaiting_decision" || phase === "analysis_done") {
+    if (phase === "awaiting_decision" || phase === "awaiting_trade") {
       advanceToNext();
     }
   }, [phase, advanceToNext]);
 
-  const buttonsDisabled = (phase !== "awaiting_decision" && phase !== "analysis_done") || showIntro;
+  const buttonsDisabled =
+    (phase !== "awaiting_decision" && phase !== "awaiting_trade") || showIntro;
 
   return (
     <div className="relative w-full h-full flex flex-col no-select">
@@ -101,8 +207,13 @@ const GameInterface: React.FC = () => {
         isChinese={isChinese}
         overrideTime={msg.time}
         overrideDate={msg.date}
+        scrollOpen={scrollOpen}
+        onScrollToggle={setScrollOpen}
+        portfolio={portfolio}
       />
-      <DeskSection onGreen={handleGreen} onRed={handleRed} disabled={buttonsDisabled} />
+      {!scrollOpen && (
+        <DeskSection onGreen={handleGreen} onRed={handleRed} disabled={buttonsDisabled} />
+      )}
 
       {/* Intro modal */}
       {showIntro && (
