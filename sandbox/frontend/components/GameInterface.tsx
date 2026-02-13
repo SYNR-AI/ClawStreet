@@ -4,32 +4,15 @@ import { useGateway } from "../hooks/useGateway";
 import intro from "../intro.json";
 import messages from "../messages.json";
 import initialPortfolio from "../portfolio.json";
+import { ANALYST_PROMPT } from "../prompts";
 import DeskSection from "./DeskSection";
 import WallSection from "./WallSection";
 
 const isChinese = /^zh\b/i.test(navigator.language);
 const introPages = isChinese ? intro.zh : intro.en;
 const introTitles = isChinese
-  ? ["故事背景", "基本玩法", "详细规则"]
+  ? ["游戏背景", "基本玩法", "详细规则"]
   : ["BRIEFING", "HOW TO PLAY", "RULES"];
-
-const SYSTEM_PROMPT = isChinese
-  ? `你是基金的高级分析师。收到市场消息后，请给出：
-1. 摘要：1-2句话总结消息内容
-2. 分析：1句话给出你对投资决策的判断
-3. 操作建议：必须用以下格式（只选一个）：
-【操作】BUY <数量> GOOG
-【操作】SELL <数量> GOOG
-【操作】HOLD
-示例：【操作】BUY 50000 GOOG`
-  : `You are the fund's senior analyst. When you receive market news, respond with:
-1. Summary: 1-2 sentences summarizing the message
-2. Analysis: 1 sentence of your investment judgment
-3. Trade recommendation in exactly this format (pick one):
-[ACTION] BUY <qty> GOOG
-[ACTION] SELL <qty> GOOG
-[ACTION] HOLD
-Example: [ACTION] BUY 50000 GOOG`;
 
 type Phase = "idle" | "processing" | "awaiting_action";
 
@@ -107,7 +90,7 @@ const GameInterface: React.FC = () => {
         : "(The fund manager rejected your last recommendation. No trade was executed.)\n\n";
     }
 
-    chat.send(`${feedbackLine}${portfolioLine}\n\n${newsText}`, SYSTEM_PROMPT);
+    chat.send(`${feedbackLine}${portfolioLine}\n\n${newsText}`, ANALYST_PROMPT);
     setPhase("processing");
   };
 
@@ -239,7 +222,11 @@ const GameInterface: React.FC = () => {
             }}
           >
             <h2
-              className="font-press-start text-[14px] text-[#b8cc33] text-center mb-5"
+              className={
+                isChinese
+                  ? "text-[20px] text-[#b8cc33] text-center mb-5 font-bold"
+                  : "font-press-start text-[16px] text-[#b8cc33] text-center mb-5"
+              }
               style={{ textShadow: "0 0 6px rgba(184,204,51,0.5)" }}
             >
               {introTitles[introPage]}
@@ -250,11 +237,14 @@ const GameInterface: React.FC = () => {
                   key={i}
                   className={
                     isChinese
-                      ? "text-[13px] leading-relaxed text-gray-300"
-                      : "font-press-start text-[8px] leading-relaxed text-gray-300"
+                      ? "text-[16px] leading-relaxed text-gray-300"
+                      : "font-press-start text-[10px] leading-relaxed text-gray-300"
                   }
                   style={{
-                    ...(isChinese && { fontFamily: "'DotGothic16', monospace" }),
+                    ...(isChinese && {
+                      fontFamily: "system-ui, -apple-system, sans-serif",
+                      fontWeight: 500,
+                    }),
                     whiteSpace: "pre-line",
                   }}
                 >

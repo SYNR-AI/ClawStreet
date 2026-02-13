@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import type { Gateway } from "./useGateway";
 import { SESSION_KEY } from "../config";
+import { DEFAULT_PROMPT } from "../prompts";
 
 export type ChatState = "idle" | "sending" | "streaming" | "done" | "error";
 
@@ -87,9 +88,7 @@ export function useChat(gateway: Gateway): Chat {
 
       const idempotencyKey = uuid();
 
-      const defaultPrompt =
-        "This message is from the story system. Reply to the user by first briefly summarizing what message/info you received, then give one or two sentences of your judgment. Be concise.";
-      const wrapped = `<system>${systemPrompt ?? defaultPrompt}</system>\n\n${message}`;
+      const wrapped = `<system>${systemPrompt ?? DEFAULT_PROMPT}</system>\n\n${message}`;
 
       try {
         const res = await gateway.rpc("chat.send", {
