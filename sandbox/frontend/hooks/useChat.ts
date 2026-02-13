@@ -21,6 +21,20 @@ function extractText(message: any): string {
     .join("");
 }
 
+function uuid() {
+  // 检查浏览器是否支持原生 API
+  if (crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+
+  // 降级方案
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 export function useChat(gateway: Gateway): Chat {
   const [reply, setReply] = useState("");
   const [chatState, setChatState] = useState<ChatState>("idle");
@@ -71,7 +85,7 @@ export function useChat(gateway: Gateway): Chat {
       setError(null);
       setChatState("sending");
 
-      const idempotencyKey = crypto.randomUUID();
+      const idempotencyKey = uuid();
 
       const defaultPrompt =
         "This message is from the story system. Reply to the user by first briefly summarizing what message/info you received, then give one or two sentences of your judgment. Be concise.";
