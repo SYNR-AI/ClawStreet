@@ -45,8 +45,12 @@ function parseTrade(text: string): Trade | null {
   return { side: side as "BUY" | "SELL", qty, symbol: "GOOG" };
 }
 
-const GameInterface: React.FC = () => {
-  const gateway = useGateway();
+interface GameInterfaceProps {
+  url?: string;
+}
+
+const GameInterface: React.FC<GameInterfaceProps> = ({ url }) => {
+  const gateway = useGateway(url);
   const chat = useChat(gateway);
   const [messageIndex, setMessageIndex] = useState(0);
   const [showIntro, setShowIntro] = useState(true);

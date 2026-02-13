@@ -16,7 +16,7 @@ function nextId() {
   return `rpc-${++idCounter}-${Date.now()}`;
 }
 
-export function useGateway(): Gateway {
+export function useGateway(url?: string): Gateway {
   const [status, setStatus] = useState<GatewayStatus>("connecting");
   const wsRef = useRef<WebSocket | null>(null);
   const pendingRpc = useRef<Map<string, { resolve: (v: any) => void; reject: (e: Error) => void }>>(
@@ -68,7 +68,7 @@ export function useGateway(): Gateway {
       }
       setStatus("connecting");
 
-      ws = new WebSocket(GATEWAY_WS_URL);
+      ws = new WebSocket(url ?? GATEWAY_WS_URL);
       wsRef.current = ws;
 
       ws.onopen = () => {
