@@ -36,7 +36,7 @@ const Clock: React.FC<ClockProps> = ({ overrideTime, overrideDate }) => {
     <div className="flex flex-col items-center justify-center w-full h-full">
       <div
         className="font-vt323 text-[#b8cc33] text-center leading-none"
-        style={{ textShadow: "0 0 4px #b8cc33, 0 0 8px rgba(184, 204, 51, 0.5)" }}
+        style={{ textShadow: "0 0 2px rgba(184, 204, 51, 0.6)" }}
       >
         <div className="text-[12px] tracking-widest opacity-80 mb-0.5 pb-2">{displayDate}</div>
         <div className="text-[16px] tracking-widest font-bold">{displayTime}</div>

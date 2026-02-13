@@ -49,11 +49,14 @@ const WallSection: React.FC<WallSectionProps> = ({
           <span
             className={
               isChinese
-                ? "text-[14px] sm:text-[18px] leading-relaxed select-none text-left"
-                : "font-press-start text-[8px] sm:text-[11px] leading-relaxed tracking-wide select-none text-left"
+                ? "text-[16px] sm:text-[16px] leading-relaxed select-none text-left"
+                : "font-press-start text-[10px] sm:text-[10px] leading-relaxed tracking-wide select-none text-left"
             }
             style={{
-              ...(isChinese && { fontFamily: "'DotGothic16', monospace" }),
+              ...(isChinese && {
+                fontFamily: "system-ui, -apple-system, sans-serif",
+                fontWeight: 500,
+              }),
               color: "#444",
               textShadow: "0 1px 2px rgba(0,0,0,0.15)",
               whiteSpace: "pre-line",
@@ -119,10 +122,9 @@ const WallSection: React.FC<WallSectionProps> = ({
         <div
           className="fixed inset-0 z-50 flex items-center justify-center"
           style={{ backdropFilter: "blur(6px)", backgroundColor: "rgba(0,0,0,0.6)" }}
-          onClick={() => onScrollToggle(false)}
         >
           <div
-            className="relative w-[100%] max-w-sm"
+            className="relative w-[100%] max-w-sm flex flex-col items-center"
             style={{ maxHeight: "80vh" }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -220,6 +222,13 @@ const WallSection: React.FC<WallSectionProps> = ({
                 </div>
               </div>
             </div>
+            {/* Close button */}
+            <button
+              className="mt-3 w-10 h-10 rounded-full bg-black/50 text-white/80 text-lg flex items-center justify-center active:bg-black/70"
+              onClick={() => onScrollToggle(false)}
+            >
+              ✕
+            </button>
           </div>
         </div>
       )}
