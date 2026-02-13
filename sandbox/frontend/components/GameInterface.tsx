@@ -3,8 +3,7 @@ import { useChat } from "../hooks/useChat";
 import { useGateway } from "../hooks/useGateway";
 import intro from "../intro.json";
 import gameData from "../messages.json";
-import initialPortfolio from "../portfolio.json";
-import { ANALYST_PROMPT } from "../prompts";
+import { ANALYST_PROMPT, FEEDBACK_AGREE, FEEDBACK_DISAGREE, SETTLEMENT_PROMPT } from "../prompts";
 import DeskSection from "./DeskSection";
 import SettlementOverlay from "./SettlementOverlay";
 import WallSection from "./WallSection";
@@ -49,16 +48,28 @@ interface GameInterfaceProps {
   url?: string;
 }
 
+const { messages, settlement, initialPortfolio, initialPrice } = gameData;
+const INITIAL_PORTFOLIO: Portfolio = {
+  cash: initialPortfolio.cash,
+  holdings: initialPortfolio.holdings.map((h) => ({
+    ...h,
+    avgPrice: initialPrice,
+  })),
+  trades: [],
+};
+const INITIAL_VALUE =
+  initialPortfolio.cash +
+  initialPortfolio.holdings.reduce((sum, h) => sum + h.qty * initialPrice, 0);
+
 const GameInterface: React.FC<GameInterfaceProps> = ({ url }) => {
   const gateway = useGateway(url);
-  const { messages, settlement } = gameData;
   const chat = useChat(gateway);
   const [messageIndex, setMessageIndex] = useState(0);
   const [showIntro, setShowIntro] = useState(true);
   const [introPage, setIntroPage] = useState(0);
   const [phase, setPhase] = useState<Phase>("idle");
   const [scrollOpen, setScrollOpen] = useState(false);
-  const [portfolio, setPortfolio] = useState<Portfolio>(initialPortfolio as Portfolio);
+  const [portfolio, setPortfolio] = useState<Portfolio>(INITIAL_PORTFOLIO);
   const [pendingTrade, setPendingTrade] = useState<Trade | null>(null);
   const [transition, setTransition] = useState<{
     date: string;
@@ -93,16 +104,8 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ url }) => {
       ? `当前持仓：现金 $${cashM}M，GOOG ${qtyStr}股（均价 ${avgStr}）`
       : `Current portfolio: Cash $${cashM}M, GOOG ${qtyStr} shares (avg ${avgStr})`;
 
-    let feedbackLine = "";
-    if (feedback === "agree") {
-      feedbackLine = isChinese
-        ? "（基金经理认同了你上一条建议，已执行交易。）\n\n"
-        : "(The fund manager agreed with your last recommendation and executed the trade.)\n\n";
-    } else if (feedback === "disagree") {
-      feedbackLine = isChinese
-        ? "（基金经理否决了你上一条建议，未执行交易。）\n\n"
-        : "(The fund manager rejected your last recommendation. No trade was executed.)\n\n";
-    }
+    const feedbackLine =
+      feedback === "agree" ? FEEDBACK_AGREE : feedback === "disagree" ? FEEDBACK_DISAGREE : "";
 
     chat.send(`${feedbackLine}${portfolioLine}\n\n${newsText}`, ANALYST_PROMPT);
     setPhase("processing");
@@ -148,10 +151,42 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ url }) => {
         setPhase("idle");
         chat.clear();
         const label = isChinese ? "一个月后..." : "ONE MONTH LATER...";
-        setTransition({ date: "2025-11-29", time: "", label, duration: 3500, hold: true });
+        setTransition({ date: settlement.date, time: "", label, duration: 3500, hold: true });
         setTimeout(() => {
           setShowSettlement(true);
           setTransition(null);
+
+          // Send settlement summary to lobster for reflection
+          const p = portfolioRef.current;
+          const holdingsValue = p.holdings.reduce((sum, h) => sum + h.qty * settlement.price, 0);
+          const totalValue = p.cash + holdingsValue;
+          const pnl = totalValue - INITIAL_VALUE;
+          const pnlPct = ((pnl / INITIAL_VALUE) * 100).toFixed(2);
+
+          const tradesLog =
+            p.trades.length > 0
+              ? p.trades
+                  .map(
+                    (t) =>
+                      `  ${t.side} ${t.qty.toLocaleString()} ${t.symbol} @ $${t.price} (${t.date})`,
+                  )
+                  .join("\n")
+              : isChinese
+                ? "  （无交易记录）"
+                : "  (no trades)";
+
+          const holdingsLog = p.holdings
+            .map(
+              (h) =>
+                `  ${h.symbol}: ${(h.qty / 1000).toFixed(0)}K shares @ avg $${h.avgPrice.toFixed(2)}`,
+            )
+            .join("\n");
+
+          const summaryMsg = isChinese
+            ? `【结算通知】\n\n结算价：GOOG $${settlement.price}\n\n已执行交易：\n${tradesLog}\n\n最终持仓：\n  现金：$${(p.cash / 1e6).toFixed(2)}M\n${holdingsLog}\n\n总资产：$${(totalValue / 1e6).toFixed(2)}M\n初始资产：$${(INITIAL_VALUE / 1e6).toFixed(2)}M\n损益：${pnl >= 0 ? "+" : ""}$${(pnl / 1e6).toFixed(2)}M (${pnl >= 0 ? "+" : ""}${pnlPct}%)`
+            : `[SETTLEMENT]\n\nSettlement price: GOOG $${settlement.price}\n\nExecuted trades:\n${tradesLog}\n\nFinal portfolio:\n  Cash: $${(p.cash / 1e6).toFixed(2)}M\n${holdingsLog}\n\nTotal value: $${(totalValue / 1e6).toFixed(2)}M\nInitial value: $${(INITIAL_VALUE / 1e6).toFixed(2)}M\nP&L: ${pnl >= 0 ? "+" : ""}$${(pnl / 1e6).toFixed(2)}M (${pnl >= 0 ? "+" : ""}${pnlPct}%)`;
+
+          chat.send(summaryMsg, SETTLEMENT_PROMPT);
         }, 3500);
         return;
       }
@@ -246,7 +281,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ url }) => {
     setShowIntro(true);
     setIntroPage(0);
     setMessageIndex(0);
-    setPortfolio(initialPortfolio as Portfolio);
+    setPortfolio(INITIAL_PORTFOLIO);
     setPendingTrade(null);
     setPhase("idle");
   }, [chat]);
@@ -271,6 +306,7 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ url }) => {
         onScrollToggle={setScrollOpen}
         portfolio={portfolio}
         currentPrice={msg.price}
+        initialValue={INITIAL_VALUE}
       />
       {!scrollOpen && (
         <DeskSection onGreen={handleGreen} onRed={handleRed} disabled={buttonsDisabled} />
@@ -398,13 +434,15 @@ const GameInterface: React.FC<GameInterfaceProps> = ({ url }) => {
       `}</style>
 
       {/* Settlement overlay */}
-      {showSettlement && console.log(`[Settlement] rendering: settlementPrice=${settlement.price}`)}
       {showSettlement && (
         <SettlementOverlay
           portfolio={portfolio}
           settlementPrice={settlement.price}
           isChinese={isChinese}
           onPlayAgain={handlePlayAgain}
+          initialValue={INITIAL_VALUE}
+          reflection={chat.reply}
+          reflectionLoading={chat.chatState === "sending" || chat.chatState === "streaming"}
         />
       )}
 

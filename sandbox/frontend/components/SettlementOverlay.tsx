@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
 
-const INITIAL_VALUE = 100_000_000 + 500_000 * 245.79; // $222.9M
-
 interface SettlementProps {
   portfolio: {
     cash: number;
@@ -11,6 +9,9 @@ interface SettlementProps {
   settlementPrice: number;
   isChinese: boolean;
   onPlayAgain: () => void;
+  initialValue: number;
+  reflection: string;
+  reflectionLoading: boolean;
 }
 
 type Phase = "shake" | "counting" | "reveal";
@@ -20,6 +21,9 @@ const SettlementOverlay: React.FC<SettlementProps> = ({
   settlementPrice,
   isChinese,
   onPlayAgain,
+  initialValue,
+  reflection,
+  reflectionLoading,
 }) => {
   const [phase, setPhase] = useState<Phase>("shake");
   const [displayPnl, setDisplayPnl] = useState(0);
@@ -27,15 +31,15 @@ const SettlementOverlay: React.FC<SettlementProps> = ({
 
   const holdingsValue = portfolio.holdings.reduce((sum, h) => sum + h.qty * settlementPrice, 0);
   const totalValue = portfolio.cash + holdingsValue;
-  const finalPnl = totalValue - INITIAL_VALUE;
-  const pnlPct = (finalPnl / INITIAL_VALUE) * 100;
+  const finalPnl = totalValue - initialValue;
+  const pnlPct = (finalPnl / initialValue) * 100;
   const pnlPositive = finalPnl >= 0;
   const pnlColor = pnlPositive ? "#4ade80" : "#f87171";
 
   console.log(
     `[Settlement] price=$${settlementPrice} cash=$${(portfolio.cash / 1e6).toFixed(2)}M holdings=`,
     portfolio.holdings,
-    `holdingsValue=$${(holdingsValue / 1e6).toFixed(2)}M total=$${(totalValue / 1e6).toFixed(2)}M INITIAL=$${(INITIAL_VALUE / 1e6).toFixed(2)}M PnL=$${(finalPnl / 1e6).toFixed(2)}M (${pnlPct.toFixed(2)}%)`,
+    `holdingsValue=$${(holdingsValue / 1e6).toFixed(2)}M total=$${(totalValue / 1e6).toFixed(2)}M INITIAL=$${(initialValue / 1e6).toFixed(2)}M PnL=$${(finalPnl / 1e6).toFixed(2)}M (${pnlPct.toFixed(2)}%)`,
   );
 
   // Vibrate on mount
@@ -85,10 +89,12 @@ const SettlementOverlay: React.FC<SettlementProps> = ({
 
   return (
     <div
-      className="absolute inset-0 z-50 flex flex-col items-center justify-center"
+      className="absolute inset-0 z-50 flex flex-col items-center overflow-y-auto"
       style={{
         backgroundColor: "#000",
         animation: phase === "shake" ? "settlementShake 0.08s infinite" : undefined,
+        paddingTop: "15%",
+        paddingBottom: "40px",
       }}
     >
       {/* Flash overlay at transition */}
@@ -227,6 +233,39 @@ const SettlementOverlay: React.FC<SettlementProps> = ({
           : `${portfolio.trades.length} trade${portfolio.trades.length !== 1 ? "s" : ""} executed`}
       </div>
 
+      {/* Lobster reflection */}
+      {phase === "reveal" && (reflectionLoading || reflection) && (
+        <div
+          style={{
+            marginTop: "20px",
+            padding: "12px 16px",
+            maxWidth: "320px",
+            borderLeft: "2px solid #b8cc33",
+            color: "#999",
+            fontSize: isChinese ? "13px" : "9px",
+            fontFamily: isChinese ? "system-ui, -apple-system, sans-serif" : undefined,
+            lineHeight: 1.8,
+            whiteSpace: "pre-line",
+            animation: "fadeInUp 0.5s ease-out",
+          }}
+        >
+          <div
+            style={{
+              color: "#b8cc33",
+              fontSize: isChinese ? "13px" : "8px",
+              fontWeight: 600,
+              marginBottom: "6px",
+              letterSpacing: "0.05em",
+            }}
+          >
+            🦞 {isChinese ? "龙虾复盘" : "LOBSTER RETROSPECTIVE"}
+          </div>
+          {reflection || (
+            <span style={{ opacity: 0.5 }}>{isChinese ? "思考中..." : "Thinking..."}</span>
+          )}
+        </div>
+      )}
+
       {/* Play Again */}
       <button
         onClick={onPlayAgain}
@@ -234,7 +273,7 @@ const SettlementOverlay: React.FC<SettlementProps> = ({
         style={{
           opacity: phase === "reveal" ? 1 : 0,
           transition: "opacity 0.5s ease-out 0.8s",
-          marginTop: "28px",
+          marginTop: "20px",
           padding: "10px 28px",
           border: "2px solid #b8cc33",
           borderRadius: "8px",
@@ -266,6 +305,10 @@ const SettlementOverlay: React.FC<SettlementProps> = ({
         @keyframes settlementFlash {
           0% { opacity: 0.7; }
           100% { opacity: 0; }
+        }
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
         }
       `}</style>
     </div>

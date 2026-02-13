@@ -2,8 +2,6 @@ import React from "react";
 import type { ChatState } from "../hooks/useChat";
 import Clock from "./Clock";
 
-const INITIAL_VALUE = 100_000_000 + 500_000 * 245.79; // $222.9M
-
 interface WallSectionProps {
   displayText: string;
   chatState: ChatState;
@@ -18,6 +16,7 @@ interface WallSectionProps {
     trades: { side: string; symbol: string; qty: number; price: number; date: string }[];
   };
   currentPrice: number;
+  initialValue: number;
 }
 
 const WallSection: React.FC<WallSectionProps> = ({
@@ -30,6 +29,7 @@ const WallSection: React.FC<WallSectionProps> = ({
   onScrollToggle,
   portfolio,
   currentPrice,
+  initialValue,
 }) => {
   const showBeam = !!displayText;
   const isLoading = chatState === "sending";
@@ -154,8 +154,8 @@ const WallSection: React.FC<WallSectionProps> = ({
                   0,
                 );
                 const totalValue = portfolio.cash + holdingsValue;
-                const pnl = totalValue - INITIAL_VALUE;
-                const pnlPct = (pnl / INITIAL_VALUE) * 100;
+                const pnl = totalValue - initialValue;
+                const pnlPct = (pnl / initialValue) * 100;
                 const pnlPositive = pnl >= 0;
                 const baseFontSize = isChinese ? "12px" : "8px";
                 const headerSize = isChinese ? "14px" : "10px";

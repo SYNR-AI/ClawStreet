@@ -1,6 +1,10 @@
 {
   "ticker": "GOOG",
   "initialPrice": 245.79,
+  "initialPortfolio": {
+    "cash": 100000000,
+    "holdings": [{ "symbol": "GOOG", "qty": 500000 }]
+  },
   "settlement": {
     "date": "2025-11-29",
     "price": 320.12
